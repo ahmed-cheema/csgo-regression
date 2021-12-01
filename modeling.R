@@ -8,17 +8,17 @@ rtg <- read_csv('data/playerRatings.csv')
 
 # Create x and y matrices for model fitting
 x <- data.matrix(df[names(df[8:ncol(df)])])
-y <- df$tScore/(df$tScore+df$ctScore)
+rounds <- df$tScore+df$ctScore
+y <- df$tScore/rounds
 
 # Get list of map names
 maps <- names(df)[(ncol(df)-6):ncol(df)]
 
-# Cross validation to find optimal lambda
-ridge_cv <- cv.glmnet(x, y, alpha=0, standardize=F)
+# Cross validation to find optimal lambda 
+ridge_cv <- cv.glmnet(x, y, weights=rounds, alpha=0, standardize=F)
 
 # Run model with optimal lambda
-ridge_reg <- glmnet(x, y, alpha=0, lambda=ridge_cv$lambda.min, standardize=F)
-# ridge_reg <- glmnet(x, y, alpha=0, lambda=0.007223028, standardize=F)
+ridge_reg <- glmnet(x, y, weights=rounds, alpha=0, lambda=ridge_cv$lambda.1se, standardize=F)
 
 # Count number of occurrences for each term in model
 freq_list <- numeric(ncol(x)-7)
