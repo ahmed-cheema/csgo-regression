@@ -19,7 +19,7 @@ prefix <- 'https://www.hltv.org'
 # matches_url to loop through all of the pages and retrieve all of the matches
 # and add them to a growing dataframe
 df_list <- vector(mode='list')
-offsets <- seq(0,11001,100)
+offsets <- seq(0,11101,100)
 
 for (x in 1:length(offsets)) {
   # Progress bar to track for loop as it may take some time
@@ -64,8 +64,11 @@ df <- df %>%
          Mirage=ifelse(mapName == "Mirage",1,0),
          Nuke=ifelse(mapName == "Nuke",1,0),
          Overpass=ifelse(mapName == "Overpass",1,0),
-         Vertigo=ifelse(mapName == "Vertigo",1,0)) %>%
-  select(-mapName)
+         Vertigo=ifelse(mapName == "Vertigo",1,0),
+         Cache=ifelse(mapName == "Cache",1,0),
+         Train=ifelse(mapName == "Train",1,0),
+         Tuscan=ifelse(mapName == "Tuscan",1,0),
+         Cobblestone=ifelse(mapName == "Cobblestone",1,0))
 
 # Remove duplicate columns and erroneous values
 df <- df %>%
@@ -75,7 +78,7 @@ df <- df %>%
 ########
 
 # Read html for page with player ratings 
-url <- 'https://www.hltv.org/stats/players?startDate=2016-02-19&rankingFilter=Top20&endDate=2021-11-27&minMapCount=0'
+url <- 'https://www.hltv.org/stats/players?startDate=2016-02-19&rankingFilter=Top20&endDate=2021-12-01&minMapCount=0'
 html <- read_html(url)
 
 # Extract table from html object and do basic cleaning
