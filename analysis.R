@@ -87,6 +87,6 @@ ggplot(cv,aes(logLambda,mse)) +
   geom_vline(aes(xintercept=cv$lambdaMin[1],color='Minimum'),show.legend=T) +
   theme_bw() +
   labs(x=paste0('log(lambda)'),y='Mean Squared Error',
-       title='Figure 1: Cross validation for ridge regression parameter',
+       title='Cross validation for ridge regression parameter',
        color='  Selection\n  Method') +
   theme(plot.title=element_text(hjust=0.5))
