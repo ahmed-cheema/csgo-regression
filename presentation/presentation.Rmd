@@ -1,0 +1,217 @@
+---
+title: "Quantifying the In-Game Impact of Counter-Strike: Global Offensive Players through Ridge Regression"
+author: "Ahmed Cheema & Vinicius Sant'anna"
+output:
+  ioslides_presentation:
+    widescreen: true
+    mathjax: "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+header-includes: \usepackage{placeins,booktabs,caption,tablefootnote,footnote,threeparttable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r,echo=F,message=F,warning=F,results='hide'}
+library(tidyverse)
+library(kableExtra)
+
+fin <- read_csv('data/results.csv')
+cv <- read_csv('data/crossValidation.csv')
+cv2 <- read_csv('data/crossValidation2.csv')
+tf <- read_csv('data/mapData.csv')
+options("kableExtra.html.bsTable" = T)
+
+corr <- structure(list(win.pct = c(1, 0.608854456794277, 0.485185689651284
+), estimate = c(0.608854456794277, 1, 0.65805322741867), rating = c(0.485185689651284, 
+0.65805322741867, 1)), class = "data.frame", row.names = c("win.pct", 
+"estimate", "rating"))
+```
+
+## Presentation Outline
+- Background\
+- Research Question\
+- Data Collection\
+- Data Preparation\
+- Modeling\
+- Results\
+- Discussion
+
+## Counter-Strike: Global Offensive (CS:GO)
+- First-person shooter, released in 2012\
+- Games feature two teams of five
+  + "Terrorist" (T) versus "counter terrorist" (C)\
+- Games consist of two halves (max 15 rounds each)\
+  + Quickest possible game: 16-0
+  + Longest possible (non-overtime) game: 16-14
+  + T & C sides are switched each half
+- Popular competitive e-sports scene\
+  + 2.74 million viewers in last major tournament
+ 
+## Data scraping
+1. Created function to scrape data from a page for a single match between two teams from HLTV (`hltv.org`)
+2. Loop to apply that function multiple times for every match registered in HLTV\
+    * Each page on `hltv.org` features 100 matches\
+    * Function was iterated through over 110 pages\
+    * Collected data for 19034 professional games since December 3rd, 2015
+
+## Data preparation
+- Data set split into two rows for each game\
+  + Each row represents one half of the game
+- Percentage  of rounds won by T for each halve represent `tWinPct`, the response variable 
+  + If the T side won three rounds in a half versus five for the C side, `tWinPct`$\ =3/8=0.375$
+
+## Data preparation (2)
+
+- Each player represents a single explanatory variable\
+  + Obtained a player's rating ($r_i$) for each half from `hltv.org`
+    * Based on simple statistics such as kills, assists, deaths, survival rating, damage rating
+  + Player on T side = $1/r_i$ (player $T_i$)
+    * reciprocal of $r_i$ is taken for T side so that higher coefficient values correspond with higher impact
+  + Player on C side = $-r_i$ (player $C_i$)\
+    * $-r_i$ used for C side because better performances from the players on C side will result in the T side winning less rounds (response variable)
+  + Player not playing in that game = $0$
+  
+## Data preparation (3)
+
+- Each game in the dataset is played on one of eleven possible "maps"
+  + A map is the arena in which a game takes place
+  + Different maps may be more or less favorable to the T side
+- Dummy variables introduced based on the map a game is played on
+
+- Then, input (explanatory) matrix $\boldsymbol{A}$ contains 2263 player variables and 11 map variables for 38068 observations
+  + Each row will have 11 nonzero values: ten players and one map
+- Output vector $\boldsymbol{b}$ (`tWinPct`) contains 38068 values
+
+## T Win Rate by Map
+
+```{r}
+ggplot(tf,aes(reorder(mapName,-tWinPct),tWinPct,fill=tWinPct)) +
+  geom_bar(stat='identity') +
+  geom_errorbar(aes(ymin=ymin,ymax=ymax),width=0.4, colour="orange", alpha=0.9, size=1.3) +
+  geom_hline(yintercept=0.5,size=1) +
+  theme_bw() +
+  labs(x='Map Name',y='Proportion of Rounds Won by T Team',
+       title='Average T Team Win Percentage vs. Map',
+       subtitle='(02/19/2016-12/01/2021)') +
+  theme(plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        legend.position = 'none') +
+  scale_y_continuous(expand=c(0,0), limits = c(0, 0.6))
+```
+
+## Data preparation (4)
+
+**Example**
+
+- Game played between team $A$ with players $A_1,A_2,...,A_5$ and a team $B$ with players $B_1,B_2,...,B_5$ on map $M_{10}$ of maps $M_1,M_2,...,M_{11}$.
+  + First half: Team $A$ is on side T and wins nine rounds to six
+  + Second half: Team $B$ is on side T and wins six rounds to seven
+- Then the input matrix $\boldsymbol{A}$ would look like ...
+```{r}
+knitr::include_graphics(rep('matrix.png'))
+```
+- And the output vector $\boldsymbol{b}$ would contain two values, $\frac{9}{15}$ and $\frac{6}{13}$.
+
+## Equation
+
+- Now that we have our input matrix $\boldsymbol{A}$ and output vector $\boldsymbol{b}$, we look to estimate the coefficients $\boldsymbol{x}$ such that $\boldsymbol{W}\boldsymbol{A}\boldsymbol{x}=\boldsymbol{W}\boldsymbol{b}$
+  + $\boldsymbol{W}$ is the weight vector - it contains 38068 values and simply represents the number of rounds played in a half
+  + A 15-0 half should be weighed more than a 1-0 half although they both have the same response variable `tWinPct`
+
+## Ridge Regression
+
+- Method of estimating coefficients in multiple regression when there's a high degree of collinearity among explanatory variables
+- Type of regularization: introduces a penalty term that shrinks coefficients towards zero, reducing variance
+- Traditional ordinary least squares (OLS) solution for $\boldsymbol{W}\boldsymbol{A}\boldsymbol{x}=\boldsymbol{W}\boldsymbol{b}$ is $\boldsymbol{x}=(\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{A})^{-1}\boldsymbol{A}^{T}\boldsymbol{b}$
+- Ridge regression solution is $\boldsymbol{x}=(\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{A}+\lambda\boldsymbol{I})^{-1}\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{b}$ 
+  + Ridge parameter ($\lambda$) is a constant that determines the amount of regularization
+    * When $\lambda=0$, we have the OLS solution
+    * When $\lambda=\infty$, all coefficients are equal to $0$
+
+## Cross Validation
+
+- K-fold cross validation is used to find the optimal $\lambda$ value for the ridge regression solution
+
+```{r}
+ggplot(cv,aes(logLambda,mse)) +
+  geom_point() +
+  geom_vline(aes(xintercept=cv$lambdaOSE[1],color='One Standard\nError Above\nMinimum'),show.legend=T) +
+  geom_vline(aes(xintercept=cv$lambdaMin[1],color='Minimum'),show.legend=T) +
+  theme_bw() +
+  labs(x=paste0('log(lambda)'),y='Mean Squared Error',
+       title='Cross validation for ridge regression parameter',
+       color='  Selection\n  Method') +
+  theme(plot.title=element_text(hjust=0.5))
+```
+
+## Results
+
+- Resulting 2274 coefficients are matched to the 2263 players and 11 maps
+
+```{r}
+ggplot(cv2,aes(x=log(lambda),y=value,col=variable)) +
+    geom_line(show.legend=F) +
+    geom_vline(aes(xintercept=cv$lambdaOSE[1])) +
+    theme(legend.position = "none") +
+    theme_bw() +
+    labs(x='log(lambda)',y='Coefficients',
+         title='Change in coefficients for ridge regression parameter') +
+    theme(plot.title=element_text(hjust=0.5)) +
+    scale_x_continuous(expand=c(0,0), limits = c(min(log(cv2$lambda)), max(log(cv2$lambda))))
+```
+
+## Results (2)
+
+```{r,echo=F}
+tf$Estimate <- c(0.0268,0.0151,0.0216,0.0166,0.0145,-0.0058,-0.0135,
+                 -0.0257,-0.0304,-0.0005,-0.0172)
+tf <- tf %>%
+  select(mapName,Estimate,tWinPct,ymin,ymax)
+names(tf) <- c('Map','Estimate','T Win Rate','95%-CI Lower Bound','95%-CI Upper Bound')
+tf %>% 
+  kbl(digits=4,caption='Map coefficient estimates') %>%
+  kable_styling(font_size=16)
+```
+
+## Results (3)
+
+```{r}
+fin$percentile <- ecdf(fin$rating)(fin$rating)
+fin2 <- fin[1:10,]
+names(fin2) <- c('Player','Games','Estimate','Rating','Rating Percentile')
+fin2 %>% 
+  kbl(digits=4,caption='Top ten player coefficient estimates') %>%
+  kable_styling(font_size=16)
+```
+
+## Model estimates vs. player statistics
+
+```{r,warning=F}
+ggplot(filter(fin,mapsPlayed > 300),
+       aes(x=impact,y=rating,size=mapsPlayed)) +
+  geom_point(color='black',fill='#FA8D8D',pch=21) +
+  theme_bw() +
+  labs(x='Coefficient Estimate',y='HLTV Rating',
+       title='Player HLTV Rating vs. Coefficient Estimate',
+       subtitle='Minimum 300 Maps Played (02/19/2016-12/01/2021)',
+       size='Games Played') +
+  theme(plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5))
+```
+
+## Model estimates vs. player statistics
+
+```{r}
+corr %>%
+  kbl(digits=3,caption='Weighted (on games played) correlation matrix of player rating, win rate, and model estimate') %>%
+  kable_styling()
+```
+
+## Discussion
+
+- Our player evaluation framework combines both contribution to team winning & individual performance
+- A similar framework can be used in the future for predictive work
+  + Can a similar methodology be used to predict the outcome of CS:GO games? Or can it be used to predict the future performance of CS:GO players?
+- Limitation: using a single variable for each player means that a single coefficient estimates their value even if their value fluctuated over the six years studied
+  + Perhaps analyze the effect of age on a CS:GO player's performance and weigh their 'peak years' higher
