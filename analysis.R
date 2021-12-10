@@ -4,6 +4,7 @@ library(tidyverse)
 df <- read_csv('data/csgoGameData.csv')
 fin <- read_csv('data/results.csv')
 cv <- read_csv('data/crossValidation.csv')
+cv2 <- read_csv('data/crossValidation2.csv')
 
 ######
 
@@ -90,3 +91,17 @@ ggplot(cv,aes(logLambda,mse)) +
        title='Cross validation for ridge regression parameter',
        color='  Selection\n  Method') +
   theme(plot.title=element_text(hjust=0.5))
+
+#####
+
+# Second cross validation plot: Coefficients vs log lambda
+
+ggplot(cv2,aes(x=log(lambda),y=value,col=variable)) +
+  geom_line(show.legend=F) +
+  geom_vline(aes(xintercept=cv$lambdaOSE[1])) +
+  theme(legend.position = "none") +
+  theme_bw() +
+  labs(x='log(lambda)',y='Coefficients',
+       title='Change in coefficients for ridge regression parameter') +
+  theme(plot.title=element_text(hjust=0.5)) +
+  scale_x_continuous(expand=c(0,0), limits = c(min(log(cv2$lambda)), max(log(cv2$lambda))))
