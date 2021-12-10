@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 fin <- read_csv('data/results.csv')
 cv <- read_csv('data/crossValidation.csv')
+cv2 <- read_csv('data/crossValidation2.csv')
 ```
 
 \newpage
@@ -58,7 +59,7 @@ All other player and map variables in $\boldsymbol{A}$ would have a correspondin
 
 The traditional OLS (ordinary least squares) solution would be to compute the estimates for $\boldsymbol{x}$ as $(\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{A})^{-1}\boldsymbol{A}^{T}\boldsymbol{b}$. To handle collinearity in the data (as teammates will be playing with each other at the same time), we introduce a penalty term that reduces variance by shrinking the coefficients towards zero. A constant $\lambda$ is part of the regularization term in the ridge regression solution where $\boldsymbol{x}=(\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{A}+\lambda\boldsymbol{I})^{-1}\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{b}$.
 
-We ran k-fold cross validation to find an optimal $\lambda$ using the "one-standard-error" suggested by the authors of the `glmnet` package used for modeling (Friedman et al., 2010). The cross validation plot of mean squared error and $\log{(\lambda})$ is shown in Figure 1 of the appendix. Using this value of $\lambda$, we were then able to use the ridge regression solution to compute the model estimates $\boldsymbol{x}$ corresponding to each variable in $\boldsymbol{A}$.
+We ran k-fold cross validation to find an optimal $\lambda$ using the "one-standard-error" suggested by the authors of the `glmnet` package used for modeling (Friedman et al., 2010). The cross validation plot of mean squared error and $\log{(\lambda})$ is shown in Figure 1 of the appendix. Using this value of $\lambda$, we were then able to use the ridge regression solution to compute the model estimates $\boldsymbol{x}$ corresponding to each variable in $\boldsymbol{A}$. The effect of $\log(\lambda)$ on the model coefficients can be seen in Figure 2 of the appendix, where a vertical line denotes our chosen ridge parameter. The reduction in variance and the shrinkage towards zero of the model coefficients as $\log(\lambda)$ increases can be seen in this graph.
 
 # Results
 
@@ -66,7 +67,7 @@ The ridge regression model's coefficients for map are shown in Table 1 of the ap
 
 The coefficients for the remaining variables represent the estimated impact of each player in the model. The players with the ten highest coefficient estimates are shown in Table 2 of the appendix. We included their HLTV ratings and the corresponding percentile based on the rating as a way to compare the model results.
 
-We explored the relationship between the coefficient estimates and the HLTV player ratings that were used as prior information in the model. Figure 2 shows a plot of a player's average HLTV rating versus their coefficient estimate among players with at least 300 games played. The correlation coefficient between rating and coefficient estimate was found to be 0.684 for these points, and the weighted correlation coefficient with games played as the weight for all points was found to be 0.658.
+We explored the relationship between the coefficient estimates and the HLTV player ratings that were used as prior information in the model. Figure 3 of the appendix shows a plot of a player's average HLTV rating versus their coefficient estimate among players with at least 300 games played. The correlation coefficient between rating and coefficient estimate was found to be 0.684 for these points, and the weighted correlation coefficient with games played as the weight for all points was found to be 0.658.
 
 We also examined the relationship between the aforementioned HLTV rating and coefficient estimate with a player's overall win rate in the time frame of interest. A weighted correlation matrix (weighted on games played) between these three variables is shown in Table 3.
 
@@ -126,6 +127,18 @@ ggplot(cv,aes(logLambda,mse)) +
     theme(plot.title=element_text(hjust=0.5))
 ```
 
+```{r}
+ggplot(cv2,aes(x=log(lambda),y=value,col=variable)) +
+  geom_line(show.legend=F) +
+  geom_vline(aes(xintercept=cv$lambdaOSE[1])) +
+  theme(legend.position = "none") +
+  theme_bw() +
+  labs(x='log(lambda)',y='Coefficients',
+       title='Figure 2: Change in coefficients for ridge regression parameter') +
+  theme(plot.title=element_text(hjust=0.5)) +
+  scale_x_continuous(expand=c(0,0), limits = c(min(log(cv2$lambda)), max(log(cv2$lambda))))
+```
+
 \setcounter{table}{0}
 \begin{center}
 \captionof{table}{Estimates and T win proportion for map variables} \label{tab:title} 
@@ -176,7 +189,7 @@ ggplot(filter(fin,mapsPlayed > 300),
     geom_point(color='black',fill='#FA8D8D',pch=21) +
     theme_bw() +
     labs(x='Coefficient Estimate',y='HLTV Rating',
-         title='Figure 2: Player HLTV Rating vs. Coefficient Estimate',
+         title='Figure 3: Player HLTV Rating vs. Coefficient Estimate',
          subtitle='Minimum 300 Games Played (12/03/2015-12/01/2021)',
          size='Games Played') +
     theme(plot.title = element_text(hjust=0.5),
