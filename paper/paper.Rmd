@@ -35,7 +35,7 @@ We scraped `hltv.org`, a website dedicated to CS:GO coverage and statistics, to 
 
 The dataset was split into two rows for each game, each representing one half of play. The score of each match was recorded and the percentage of rounds won by the T team was calculated to account for varying half lengths. For example, if the T side won three rounds in a half versus five for the C side, the response variable `tWinPct` would be $3/8=0.375$.
 
-The objective was to have a column representing each player who played in any of the 19034 games over the past six years. If a player played for the T side in the game represented by any row, the value for their respective column would be $1/r_i$ where $r_i$ represents the player rating for a T player $T_i$ in that half. If a player played for the C side, the value for that column would be $-r_i$ for a C player $C_i$. If a player did not play in that game, the value would be $0$. A player's rating was obtained from `hltv.org` and is included in the analysis to serve as a way to approximate how much credit one player should get for their team's performance. The rating is calculated using statistics such as kills, assists, deaths, survival rating, damage rating, etc.
+The objective was to have a column representing each player who played in any of the 19034 games over the past six years. If a player played for the T side in the game represented by any row, the value for their respective column would be $1/r_i$ where $r_i$ represents the player rating for a T player $T_i$ in that half. If a player played for the C side, the value for that column would be $-r_i$ for a C player $C_i$. If a player did not play in that game, the value would be $0$. A player's rating was obtained from `hltv.org` and is included in the analysis to serve as a way to approximate how much credit one player should get for their team's performance. The rating is calculated using statistics such as kills, assists, deaths, survival rating, damage rating, etc (Milovanovic, 2017).
 
 Recall that the response variable `tWinPct` measures the performance of the T side. Thus, the reciprocal of $r_i$ is taken for each player $T_i$ because higher ratings are better while we want higher model coefficients to correspond with better players. Greater input values would correlate with greater model coefficients, so the reciprocal is calculated. For C players $C_i$, the column value is $-r_i$ because the negative sign indicates that a greater performance from $C_i$ would be expected to have a negative impact on the response variable `tWinPct`.
 
@@ -43,7 +43,7 @@ Recall that the response variable `tWinPct` measures the performance of the T si
 
 There are 2263 players in the data set. Each row will consist of 10 nonzero values (five positive, five negative) for these 2263 players because there are five players on each side. In addition, dummy variables based on the setting (or "map") of the game are added to account for any bias. Certain maps are more favorable to the T side than the CT side, so this adjustment introduces eleven dummy variables for the eleven different maps played in the given time frame.
 
-Thus, the input matrix $\boldsymbol{A}$ consists of 2270 variables and 38016 observations while the output vector $\boldsymbol{b}$ (or `tWinPct`) has 38016 values. We also have a weight vector $\boldsymbol{W}$ representing the number of rounds played in each observation. Then we are looking to find the estimates for the vector $\boldsymbol{x}$ where $\boldsymbol{W}\boldsymbol{A}\boldsymbol{x}=\boldsymbol{W}\boldsymbol{b}$.
+Thus, the input matrix $\boldsymbol{A}$ consists of 2274 variables and 38068 observations while the output vector $\boldsymbol{b}$ (or `tWinPct`) has 38068 values. We also have a weight vector $\boldsymbol{W}$ representing the number of rounds played in each observation. Then we are looking to find the estimates for the vector $\boldsymbol{x}$ where $\boldsymbol{W}\boldsymbol{A}\boldsymbol{x}=\boldsymbol{W}\boldsymbol{b}$.
 
 For example, suppose a game is played between a team $A$ with players $A_1,A_2,...,A_5$ and a team $B$ with players $B_1,B_2,...,B_5$. Team $A$ begins the game on the T side and ends the first half up nine rounds to six for team $B$. Team $B$ then plays as the T team in the second half, winning six rounds again while team $A$ wins the necessary seven rounds needed to win the game with an overall score of 16-12. The game was played on map $M_{10}$ in $M_1,M_2,...,M_{11}$. Then $\boldsymbol{A}$ would be equivalent to the matrix below where $r_i$ represents the player rating of the corresponding player.
 
@@ -58,7 +58,7 @@ All other player and map variables in $\boldsymbol{A}$ would have a correspondin
 
 The traditional OLS (ordinary least squares) solution would be to compute the estimates for $\boldsymbol{x}$ as $(\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{A})^{-1}\boldsymbol{A}^{T}\boldsymbol{b}$. To handle collinearity in the data (as teammates will be playing with each other at the same time), we introduce a penalty term that reduces variance by shrinking the coefficients towards zero. A constant $\lambda$ is part of the regularization term in the ridge regression solution where $\boldsymbol{x}=(\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{A}+\lambda\boldsymbol{I})^{-1}\boldsymbol{A}^{T}\boldsymbol{W}\boldsymbol{b}$.
 
-We ran k-fold cross validation to find an optimal $\lambda$ using the "one-standard-error" suggested by the authors of the `glmnet` package used for modeling (Friedman et al. 2010). The cross validation plot of mean squared error and $\log{(\lambda})$ is shown in Figure 1 of the appendix. Using this value of $\lambda$, we were then able to use the ridge regression solution to compute the model estimates $\boldsymbol{x}$ corresponding to each variable in $\boldsymbol{A}$.
+We ran k-fold cross validation to find an optimal $\lambda$ using the "one-standard-error" suggested by the authors of the `glmnet` package used for modeling (Friedman et al., 2010). The cross validation plot of mean squared error and $\log{(\lambda})$ is shown in Figure 1 of the appendix. Using this value of $\lambda$, we were then able to use the ridge regression solution to compute the model estimates $\boldsymbol{x}$ corresponding to each variable in $\boldsymbol{A}$.
 
 # Results
 
@@ -66,7 +66,7 @@ The ridge regression model's coefficients for map are shown in Table 1 of the ap
 
 The coefficients for the remaining variables represent the estimated impact of each player in the model. The players with the ten highest coefficient estimates are shown in Table 2 of the appendix. We included their HLTV ratings and the corresponding percentile based on the rating as a way to compare the model results.
 
-We explored the relationship between the coefficient estimates and the HLTV player ratings that were used as prior information in the model. Figure 2 of the appendix shows a plot of a player's average HLTV rating versus their coefficient estimate among players with at least 300 games played. The correlation coefficient between rating and coefficient estimate was found to be 0.684 for these points, and the weighted correlation coefficient with games played as the weight for all points was found to be 0.658.
+We explored the relationship between the coefficient estimates and the HLTV player ratings that were used as prior information in the model. Figure 2 shows a plot of a player's average HLTV rating versus their coefficient estimate among players with at least 300 games played. The correlation coefficient between rating and coefficient estimate was found to be 0.684 for these points, and the weighted correlation coefficient with games played as the weight for all points was found to be 0.658.
 
 We also examined the relationship between the aforementioned HLTV rating and coefficient estimate with a player's overall win rate in the time frame of interest. A weighted correlation matrix (weighted on games played) between these three variables is shown in Table 3.
 
@@ -76,7 +76,7 @@ We also examined the relationship between the aforementioned HLTV rating and coe
 \captionof{table}{Weighted correlation matrix of player rating, win rate, and coefficient estimate} 
 \begin{tabular}{ @{\hspace{4\tabcolsep}} llcccc @{\hspace{4\tabcolsep}} }
 \toprule
- & win rate\footnote{text} & estimate & rating\footnote{footnote text} \\ 
+ & win rate\footnote{footnote text} & estimate & rating\footnote{footnote text} \\ 
 \midrule
 win rate & 1.000 & 0.609 & 0.485 \\
 estimate & 0.609 & 1.000 & 0.658 \\
@@ -94,11 +94,11 @@ rating & 0.485 & 0.658 & 1.000 \\
 
 The map coefficient estimates in Table 1 are clearly related with the proportion of rounds won by the T side in the dataset. If the T side has a win proportion of greater than 0.5 on any given map, the coefficient estimate is positive. Otherwise if the T side has a win proportion below 0.5, the corresponding estimate for that map is negative. The absolute value of the coefficient estimate depends on how much further from 0.5 the proportion is along with the confidence interval for the proportion. The 95% confidence interval was computed for the proportion of rounds won by the T side on each map (`tWinPct`) and the size of the interval varies based on how high the sample size is for each map. The map Tuscan has a massive 95% confidence interval for `tWinPct` from 0.335 to 0.541 because the map was only played in eight games (a total of 89 rounds), so it also has the coefficient estimate closest to zero. 
 
-The remaining model coefficient estimates represent the estimated impact of each player. As shown in Table 2, we've found that seven of the players with a top ten coefficient estimate also had an HLTV rating in at least the 95th percentile. The players with the five highest HLTV ratings (minimum 100 maps played) are all in the top six for coefficient estimates: s1mple, ZywOo, sh1ro, device, and NiKo. Oleksandr "s1mple" Kostyliev, Nicolai "device" Reedtz, and Nikola "NiKo" Kovač are all regarded as some of the greatest CS:GO players in the history of the game while Mathieu "ZywOo" Herbaut and Dmitriy "sh1ro" Sokolov are young stars who have shown the potential to one day enter that conversation as well, and their statistical dominance seems to back that up.
+The remaining model coefficient estimates represent the estimated impact of each player. As shown in Table 2, we've found that seven of the players with a top ten coefficient estimate also had an HLTV rating in at least the 95th percentile. The players with the five highest HLTV ratings (minimum 100 maps played) are all in the top six for coefficient estimates: s1mple, ZywOo, sh1ro, device, and NiKo. Oleksandr "s1mple" Kostyliev, Nicolai "device" Reedtz, and Nikola "NiKo" Kovač are all regarded as some of the greatest CS:GO players oof all-time, while Mathieu "ZywOo" Herbaut and Dmitriy "sh1ro" Sokolov are young stars who have shown the potential to one day enter that conversation as well. The statistical dominance of these players seems to support these claims. 
 
 The weighted correlation matrix of player rating, win rate, and coefficient estimate (Table 3) suggests that the model estimates blend together both contribution to winning (0.609) and individual performance (0.658) in a way that neither metric can do on their own. By being able to combine both intertwined aspects of the game, teams can identify players that put up "empty stats" (racking up a high number of eliminations, but not contributing as much to their team's winning chances) or players that quietly impact the game more than their basic statistics suggest.
 
-Regularization has previously been used in a similar way for player evaluation in the National Basketball Association (Sill 2010) and the same methodology appears to be applicable to an e-sports context. Future research should begin to explore the predictive capabilities of a regularization framework and continue to expand the use of advanced statistical methods in e-sports.
+Regularization has previously been used in a similar way for player evaluation in the National Basketball Association (Sill, 2010) and the same methodology appears to be applicable to an e-sports context. Future research should begin to explore the predictive capabilities of a regularization framework and continue to expand the use of advanced statistical methods in e-sports. Our regularization methodology can also be altered to better handle players with fluctuating skill levels throughout the time frame covered in the dataset. For example, a player who peaked at a high skill level and then regressed later on would be treated as a single variable despite having varying impact throughout the dataset.
 
 \newpage
 
@@ -106,7 +106,9 @@ Regularization has previously been used in a similar way for player evaluation i
 
 1. Friedman, J. H., T. Hastie, and R. Tibshirani. “Regularization Paths for Generalized Linear Models via Coordinate Descent”. Journal of Statistical Software, vol. 33, no. 1, Feb. 2010, pp. 1-22, doi:10.18637/jss.v033.i01.
 
-2. Sill, Joseph. "Improved NBA adjusted+/-using regularization and out-of-sample testing." Proceedings of the 2010 MIT sloan sports analytics conference. 2010.
+2. Milovanovic, P. (2017, June 14). Introducing rating 2.0. HLTV.org. Retrieved December 6, 2021, from https://www.hltv.org/news/20695/introducing-rating-20. 
+
+3. Sill, Joseph. "Improved NBA adjusted+/-using regularization and out-of-sample testing." Proceedings of the 2010 MIT sloan sports analytics conference. 2010.
 
 \newpage
 
@@ -175,7 +177,7 @@ ggplot(filter(fin,mapsPlayed > 300),
     theme_bw() +
     labs(x='Coefficient Estimate',y='HLTV Rating',
          title='Figure 2: Player HLTV Rating vs. Coefficient Estimate',
-         subtitle='Minimum 300 Games Played (02/19/2016-12/01/2021)',
+         subtitle='Minimum 300 Games Played (12/03/2015-12/01/2021)',
          size='Games Played') +
     theme(plot.title = element_text(hjust=0.5),
           plot.subtitle = element_text(hjust=0.5))
