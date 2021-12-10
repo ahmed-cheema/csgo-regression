@@ -51,15 +51,16 @@ corr <- structure(list(win.pct = c(1, 0.608854456794277, 0.485185689651284
 ## Data scraping
 1. Created function to scrape data from a page for a single match between two teams from HLTV (`hltv.org`)
 2. Loop to apply that function multiple times for every match registered in HLTV\
-    * Each page on `hltv.org` features 100 matches\
-    * Function was iterated through over 110 pages\
-    * Collected data for 19034 professional games since December 3rd, 2015
+    + Each page on `hltv.org` features 100 matches\
+    + Function was iterated through over 110 pages\
+    + Collected data for 19034 professional games since December 3rd, 2015
+      - One match may consist of multiple games (best-of-3, best-of-5 matches)
 
 ## Data preparation
 - Data set split into two rows for each game\
   + Each row represents one half of the game
-- Percentage  of rounds won by T for each halve represent `tWinPct`, the response variable 
-  + If the T side won three rounds in a half versus five for the C side, `tWinPct`$\ =3/8=0.375$
+- Percentage  of rounds won by T for each half is `tWinPct`, the response variable 
+  + If the T side won three rounds in a half versus five for the C side, `tWinPct` equals $3/8=0.375$
 
 ## Data preparation (2)
 
@@ -67,14 +68,14 @@ corr <- structure(list(win.pct = c(1, 0.608854456794277, 0.485185689651284
   + Obtained a player's rating ($r_i$) for each half from `hltv.org`
     * Based on simple statistics such as kills, assists, deaths, survival rating, damage rating
   + Player on T side = $1/r_i$ (player $T_i$)
-    * reciprocal of $r_i$ is taken for T side so that higher coefficient values correspond with higher impact
+    * Reciprocal of $r_i$ is taken for T side so that higher coefficient values correspond with higher impact
   + Player on C side = $-r_i$ (player $C_i$)\
     * $-r_i$ used for C side because better performances from the players on C side will result in the T side winning less rounds (response variable)
   + Player not playing in that game = $0$
   
 ## Data preparation (3)
 
-- Each game in the dataset is played on one of eleven possible "maps"
+- Each game in the dataset is played on one of 11 possible "maps"
   + A map is the arena in which a game takes place
   + Different maps may be more or less favorable to the T side
 - Dummy variables introduced based on the map a game is played on
@@ -93,7 +94,7 @@ ggplot(tf,aes(reorder(mapName,-tWinPct),tWinPct,fill=tWinPct)) +
   theme_bw() +
   labs(x='Map Name',y='Proportion of Rounds Won by T Team',
        title='Average T Team Win Percentage vs. Map',
-       subtitle='(02/19/2016-12/01/2021)') +
+       subtitle='(12/03/2015-12/01/2021)') +
   theme(plot.title = element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5),
         legend.position = 'none') +
@@ -194,7 +195,7 @@ ggplot(filter(fin,mapsPlayed > 300),
   theme_bw() +
   labs(x='Coefficient Estimate',y='HLTV Rating',
        title='Player HLTV Rating vs. Coefficient Estimate',
-       subtitle='Minimum 300 Maps Played (02/19/2016-12/01/2021)',
+       subtitle='Minimum 300 Maps Played (12/03/2015-12/01/2021)',
        size='Games Played') +
   theme(plot.title = element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5))
